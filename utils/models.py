@@ -227,6 +227,64 @@ class Decoder(nn.Module):
         return x
 
 
+class Transformer(nn.Module):
+    def __init__(
+        self,
+        units,
+        input_vocab_size,
+        target_vocab_size,
+        input_max_length=150,
+        target_max_length=50,
+        n_heads=2,
+        n_blocks=2,
+        fully_connected_dim=256,
+        dropout_rate=0.1,
+    ):
+        super().__init__()
+        self.units = units
+        self.n_heads = n_heads
+        self.n_blocks = n_blocks
+        self.dropout_rate = dropout_rate
+        self.fully_connected_dim = fully_connected_dim
+
+        self.input_max_length = input_max_length
+        self.target_max_length = target_max_length
+        self.input_vocab_size = input_vocab_size
+        self.target_vocab_size = target_vocab_size
+
+        self.encoder = Encoder(
+            units=self.units,
+            vocab_size=self.input_vocab_size,
+            n_heads=n_heads,
+            n_bloks=self.n_blocks,
+            fully_connected_dim=self.fully_connected_dim,
+            max_length=self.input_max_length,
+        )
+
+        self.decoder = Decoder(
+            units=self.units,
+            vocab_size=self.target_vocab_size,
+            n_heads=n_heads,
+            n_bloks=self.n_blocks,
+            fully_connected_dim=self.fully_connected_dim,
+            max_length=self.target_max_length,
+        )
+
+    def forward(
+        self,
+        context,
+        target,
+        enc_padding_mask=None,
+        dec_padding_mask=None,
+        dec_look_ahead_mask=None,
+    ):
+
+        enc_out = self.encoder(context, enc_padding_mask)
+        x = self.decoder(target, enc_out, dec_padding_mask, dec_look_ahead_mask)
+
+        return x
+
+
 def create_padding_mask(token_ids):
     # All the padding will have 0 as value
     mask = (token_ids == 0).float()
@@ -248,20 +306,18 @@ train_loader = DataLoader(dataset=dt, batch_size=8, shuffle=True)
 enc = Encoder(units, dt.vocab_size)
 dec = Decoder(units, dt.vocab_size, max_length=50)
 
-for d, s in train_loader:
+model = Transformer(256, dt.vocab_size, dt.vocab_size)
 
-    enc_padding_mask = create_padding_mask(d)
+for context, target in train_loader:
 
-    dec_padding_mask = create_padding_mask(s)
-    dec_look_ahead_mask = create_look_ahead_mask(s.shape[1])
+    enc_padding_mask = create_padding_mask(context)
 
-    # print(dec_look_ahead_mask.shape)
+    dec_padding_mask = create_padding_mask(target)
+    dec_look_ahead_mask = create_look_ahead_mask(target.shape[1])
 
-    out = enc(d, enc_padding_mask)
+    out = model(context, target, enc_padding_mask, None, dec_look_ahead_mask)
 
-    out = dec(s, out, None, dec_look_ahead_mask)
-
-    # print(out.shape)
+    print(out.shape)
 
     break
-    ...
+    # ...
