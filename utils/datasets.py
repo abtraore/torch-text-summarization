@@ -1,9 +1,8 @@
 import torch
-
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 
-from data import load_dataset, make_maps, get_encoder_decoder, preproccess
+from .data import load_dataset, make_maps, get_encoder_decoder, preproccess
 
 
 class SummarizationDataset(Dataset):
@@ -63,10 +62,3 @@ class SummarizationDataset(Dataset):
 
         self.summary = pad_sequence(self.summary)
         self.summary = torch.permute(self.summary, (1, 0))
-
-        print(self.dialogue.shape)
-        print(self.summary.shape)
-
-
-# dt = SummarizationDataset("data/corpus")
-# train_loader = DataLoader(dataset=dt, batch_size=8, shuffle=True)
