@@ -35,7 +35,13 @@ class PositionalEncoding(nn.Module):
 
 class EncoderLayer(nn.Module):
     def __init__(
-        self, units, vocab_size, n_heads=2, fully_connected_dim=256, dropout_rate=0.1
+        self,
+        units,
+        vocab_size,
+        n_heads=2,
+        fully_connected_dim=256,
+        dropout_rate=0.1,
+        layernorm_eps=1e-6,
     ):
         super().__init__()
         self.units = units
@@ -51,8 +57,8 @@ class EncoderLayer(nn.Module):
             nn.Linear(fully_connected_dim, units),
         )
 
-        self.layer_norm1 = nn.LayerNorm(units)
-        self.layer_norm2 = nn.LayerNorm(units)
+        self.layer_norm1 = nn.LayerNorm(units, eps=layernorm_eps)
+        self.layer_norm2 = nn.LayerNorm(units, eps=layernorm_eps)
 
         self.dropout_ffn = nn.Dropout(dropout_rate)
 
@@ -93,24 +99,29 @@ class Encoder(nn.Module):
 
         self.dropout = nn.Dropout(dropout_rate)
 
-        self.encoder_layers = [
-            EncoderLayer(
-                units=units,
-                vocab_size=vocab_size,
-                n_heads=n_heads,
-                fully_connected_dim=fully_connected_dim,
-                dropout_rate=dropout_rate,
-            ).to(device)
-            for _ in range(self.n_blocks)
-        ]
+        self.encoder_layers = nn.ModuleList(
+            [
+                EncoderLayer(
+                    units=units,
+                    vocab_size=vocab_size,
+                    n_heads=n_heads,
+                    fully_connected_dim=fully_connected_dim,
+                    dropout_rate=dropout_rate,
+                ).to(device)
+                for _ in range(self.n_blocks)
+            ]
+        )
 
     def forward(self, x, mask=None):
+
+        seq_length = x.shape[1]
 
         x = self.embedding(x)
 
         x *= torch.sqrt(torch.tensor(self.units))
 
         x = self.pos_encoding(x)
+        x = x[:, :seq_length, :]
 
         x = self.dropout(x)
 
@@ -122,11 +133,16 @@ class Encoder(nn.Module):
 
 class DecoderLayer(nn.Module):
     def __init__(
-        self, units, vocab_size, n_heads=2, fully_connected_dim=256, dropout_rate=0.1
+        self,
+        units,
+        vocab_size,
+        n_heads=2,
+        fully_connected_dim=256,
+        dropout_rate=0.1,
+        layernorm_eps=1e-6,
     ):
         super().__init__()
         self.units = units
-        self.vocab_size = vocab_size
 
         self.mha_1 = nn.MultiheadAttention(
             embed_dim=units, num_heads=n_heads, dropout=dropout_rate, batch_first=True
@@ -142,19 +158,20 @@ class DecoderLayer(nn.Module):
             nn.Linear(fully_connected_dim, units),
         )
 
-        self.layer_norm1 = nn.LayerNorm(units)
-        self.layer_norm2 = nn.LayerNorm(units)
-        self.layer_norm2 = nn.LayerNorm(units)
+        self.layer_norm1 = nn.LayerNorm(units, eps=layernorm_eps)
+        self.layer_norm2 = nn.LayerNorm(units, eps=layernorm_eps)
+        self.layer_norm3 = nn.LayerNorm(units, eps=layernorm_eps)
 
         self.dropout_ffn = nn.Dropout(dropout_rate)
 
-    def forward(self, x, enc_out, padding_mask, look_ahead_mask):
+    def forward(self, x, enc_out, enc_padding_mask, padding_mask, look_ahead_mask):
 
         self_mha_out_1, _ = self.mha_1(
             x,
             x,
             x,
             attn_mask=look_ahead_mask,
+            key_padding_mask=padding_mask,
             is_causal=True,
         )
 
@@ -164,7 +181,7 @@ class DecoderLayer(nn.Module):
             Q1,
             enc_out,
             enc_out,
-            key_padding_mask=padding_mask,
+            key_padding_mask=enc_padding_mask,
         )
 
         cross_mha_out_2 = self.layer_norm2(Q1 + cross_mha_out_2)
@@ -173,7 +190,7 @@ class DecoderLayer(nn.Module):
 
         ffn_out = self.dropout_ffn(ffn_out)
 
-        decoder_out = self.layer_norm2(cross_mha_out_2 + ffn_out)
+        decoder_out = self.layer_norm3(cross_mha_out_2 + ffn_out)
 
         return decoder_out
 
@@ -200,29 +217,43 @@ class Decoder(nn.Module):
 
         self.dropout = nn.Dropout(dropout_rate)
 
-        self.decoder_layers = [
-            DecoderLayer(
-                units=units,
-                vocab_size=vocab_size,
-                n_heads=n_heads,
-                fully_connected_dim=fully_connected_dim,
-                dropout_rate=dropout_rate,
-            ).to(device)
-            for _ in range(self.n_blocks)
-        ]
+        self.decoder_layers = nn.ModuleList(
+            [
+                DecoderLayer(
+                    units=units,
+                    vocab_size=vocab_size,
+                    n_heads=n_heads,
+                    fully_connected_dim=fully_connected_dim,
+                    dropout_rate=dropout_rate,
+                ).to(device)
+                for _ in range(self.n_blocks)
+            ]
+        )
 
-    def forward(self, x, enc_out, padding_mask=None, look_ahead_mask=None):
+    def forward(
+        self,
+        x,
+        enc_out,
+        enc_padding_mask=None,
+        dec_padding_mask=None,
+        look_ahead_mask=None,
+    ):
+
+        seq_length = x.shape[1]
 
         x = self.embedding(x)
 
         x *= torch.sqrt(torch.tensor(self.units))
 
         x = self.pos_encoding(x)
+        x = x[:, :seq_length, :]
 
         x = self.dropout(x)
 
         for i in range(self.n_blocks):
-            x = self.decoder_layers[i](x, enc_out, padding_mask, look_ahead_mask)
+            x = self.decoder_layers[i](
+                x, enc_out, enc_padding_mask, dec_padding_mask, look_ahead_mask
+            )
 
         return x
 
@@ -273,7 +304,9 @@ class Transformer(nn.Module):
             device=device,
         )
 
-        self.classifier = nn.Linear(fully_connected_dim, target_vocab_size)
+        # print(target_vocab_size)
+
+        self.classifier = nn.Linear(units, target_vocab_size)
         self.logSoftmax = nn.LogSoftmax(dim=-1)
 
     def forward(
@@ -286,7 +319,9 @@ class Transformer(nn.Module):
     ):
 
         enc_out = self.encoder(context, enc_padding_mask)
-        dec_out = self.decoder(target, enc_out, dec_padding_mask, dec_look_ahead_mask)
+        dec_out = self.decoder(
+            target, enc_out, enc_padding_mask, dec_padding_mask, dec_look_ahead_mask
+        )
 
         out = self.logSoftmax(self.classifier(dec_out))
 
@@ -294,11 +329,15 @@ class Transformer(nn.Module):
 
 
 def create_padding_mask(token_ids):
-    # All the padding will have 0 as value
-    mask = 1 - (token_ids == 0).float()
+    mask = (token_ids == 0).float()
+
+    mask = 1 - mask
     return mask
 
 
 def create_look_ahead_mask(seq_length):
-    mask = torch.tril(torch.ones((seq_length, seq_length)))
+    mask = torch.tril(torch.ones((seq_length, seq_length))).float()
+
+    mask = (1 - mask) * -1e9
+
     return mask

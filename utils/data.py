@@ -15,14 +15,15 @@ def load_dataset(dataset_dir: str):
     return train_data, test_data
 
 
-def preproccess(input_data: pd.DataFrame):
+def preproccess_util(input_data: str):
+    lowercase = input_data.lower()
+    removed_newlines = re.sub("\n|\r|\t", " ", lowercase)
+    removed_double_spaces = " ".join(removed_newlines.split(" "))
+    clean = "[SOS] " + removed_double_spaces + " [EOS]"
+    return clean
 
-    def preproccess_util(input_data: str):
-        lowercase = input_data.lower()
-        removed_newlines = re.sub("\n|\r|\t", " ", lowercase)
-        removed_double_spaces = " ".join(removed_newlines.split(" "))
-        clean = "[SOS] " + removed_double_spaces + " [EOS]"
-        return clean
+
+def preproccess(input_data: pd.DataFrame):
 
     input_data["summary"] = input_data.apply(
         lambda row: preproccess_util(row["summary"]), axis=1

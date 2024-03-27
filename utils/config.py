@@ -1,9 +1,11 @@
 class TransformerConfig:
-    n_units = 256
-    n_heads = 2
     n_blocks = 2
+    n_heads = 2
+    n_units = 128
     fully_connected_dim = 256
+    max_position_encoding_input = 256
+    max_position_target_input = 256
     dropout_rate = 0.1
     # training
-    epochs = 10
-    batch_size = 8
+    epochs = 5
+    batch_size = 64

@@ -8,7 +8,7 @@ def mask_loss(y_pred, y_true):
     y_true = torch.flatten(y_true, 0, 1)
 
     mask_true = (y_true != 0).float()
-    loss = F.cross_entropy(y_pred, y_true, reduction="none")
+    loss = F.nll_loss(y_pred, y_true, reduction="none")
     loss *= mask_true
     loss = torch.sum(loss) / torch.sum(mask_true)
 

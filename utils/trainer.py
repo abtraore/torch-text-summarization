@@ -23,17 +23,25 @@ def loops(model, epochs, train_loader, val_loader, optimizer, scheduler, device)
             context = context.to(device)
             target = target.to(device)
 
+            target_in = target[:, :-1]
+            target_out = target[:, 1:]
+
             enc_padding_mask = create_padding_mask(context)
-            dec_padding_mask = create_padding_mask(context)
-            dec_look_ahead_mask = create_look_ahead_mask(target.shape[1]).to(device)
+            # dec_padding_mask = create_padding_mask(context)
+            dec_padding_mask = create_padding_mask(target_in).to(device)
+            dec_look_ahead_mask = create_look_ahead_mask(target_in.shape[1]).to(device)
 
             optimizer.zero_grad()
 
             out = model(
-                context, target, enc_padding_mask, dec_padding_mask, dec_look_ahead_mask
+                context,
+                target_in,
+                enc_padding_mask,
+                dec_padding_mask,
+                dec_look_ahead_mask,
             )
 
-            loss = mask_loss(out, target)
+            loss = mask_loss(out, target_out)
 
             loss.backward()
             optimizer.step()
@@ -55,28 +63,34 @@ def loops(model, epochs, train_loader, val_loader, optimizer, scheduler, device)
                 context = context.to(device)
                 target = target.to(device)
 
+                target_in = target[:, :-1]
+                target_out = target[:, 1:]
+
                 enc_padding_mask = create_padding_mask(context)
-                dec_padding_mask = create_padding_mask(context)
-                dec_look_ahead_mask = create_look_ahead_mask(target.shape[1]).to(device)
+                # dec_padding_mask = create_padding_mask(context)
+                dec_padding_mask = create_padding_mask(target_in).to(device)
+                dec_look_ahead_mask = create_look_ahead_mask(target_in.shape[1]).to(
+                    device
+                )
 
                 optimizer.zero_grad()
 
                 out = model(
                     context,
-                    target,
+                    target_in,
                     enc_padding_mask,
                     dec_padding_mask,
                     dec_look_ahead_mask,
                 )
 
-                loss = mask_loss(out, target)
+                loss = mask_loss(out, target_out)
 
                 val_total_loss += loss.item()
 
         val_total_loss = val_total_loss / len(val_loader)
         # val_total_acc = val_total_acc / len(val_loader)
 
-        scheduler.step(val_total_loss)
+        scheduler.step()
 
         print(
             f" Epoch: {epoch+1} | Train Loss: {train_total_loss:.4} | Train Acc: {train_total_acc:.4}"
