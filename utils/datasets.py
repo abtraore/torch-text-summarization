@@ -22,12 +22,7 @@ class SummarizationDataset(Dataset):
 
         self.stoi, self.itos = make_maps(self.data)
 
-        # self.stoi = dict(list(self.stoi.items())[:301])
-        # self.itos = dict(list(self.itos.items())[:301])
-
         self.vocab_size = len(self.stoi.keys())
-
-        # print(self.stoi)
 
         self.encoder, self.decoder = get_encoder_decoder(self.stoi, self.itos)
 

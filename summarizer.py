@@ -16,7 +16,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 device = "cpu"
 
 model = Transformer(
-    units=cfg.n_units,
+    units=cfg.d_model,
     input_vocab_size=train_dt.vocab_size,
     target_vocab_size=train_dt.vocab_size,
     input_max_length=cfg.max_position_encoding_input,
@@ -35,12 +35,14 @@ output = torch.tensor(list(map(train_dt.encoder, ["[SOS]"]))).unsqueeze(0)
 
 out = summarize(
     model,
-    "A will go to the animal shelter tomorrow to get a puppy for her son. They already visited the shelter last Monday and the son chose the puppy. ",
+    "Amanda: I baked  cookies. Do you want some?\r\nJerry: Sure!\r\nAmanda: I'll bring you tomorrow :-)",
     output,
     50,
     train_dt.encoder,
     train_dt.decoder,
     device=device,
 )
+
+print(out)
 
 print(out.replace("[SOS]", "").replace("[UNK]", "").replace("[EOS]", "").strip())
