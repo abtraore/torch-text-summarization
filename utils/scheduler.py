@@ -2,6 +2,10 @@ import torch
 
 
 class CustomSchedule:
+    """
+    Scheduler used in the paper Attention Is All You Nedd (https://arxiv.org/abs/1706.03762)
+    """
+
     def __init__(self, d_model, warmup_steps=4000):
         self.d_model = d_model
         self.warmup_steps = warmup_steps

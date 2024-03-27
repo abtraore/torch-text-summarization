@@ -27,7 +27,7 @@ class PositionalEncoding(nn.Module):
         self.register_buffer("pe", pe)
 
     def forward(self, x: Tensor) -> Tensor:
-        # Adding positional
+        # Adding positional encoding to embedding.
         x += self.pe[:, : x.size(1), :]
         return x
 
