@@ -13,7 +13,6 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # Create configuration.
 cfg = TransformerConfig()
 
-
 # Instantiate train loader.
 train_dt = SummarizationDataset("data/corpus")
 train_loader = DataLoader(dataset=train_dt, batch_size=cfg.batch_size, shuffle=True)

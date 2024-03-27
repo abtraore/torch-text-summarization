@@ -4,17 +4,21 @@ from torch.utils.data import DataLoader
 from utils.datasets import SummarizationDataset
 from utils.config import TransformerConfig
 from utils.models import Transformer
-from utils.summarize import next_word, summarize
+from utils.summarize import summarize
 
 
+# Create configuration.
 cfg = TransformerConfig()
+
+# Instantiate train loader.
 train_dt = SummarizationDataset("data/corpus")
 train_loader = DataLoader(dataset=train_dt, batch_size=cfg.batch_size, shuffle=True)
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
+# Use cpu for inference.
 device = "cpu"
 
+
+# Instantiate model.
 model = Transformer(
     units=cfg.d_model,
     input_vocab_size=train_dt.vocab_size,
@@ -27,15 +31,20 @@ model = Transformer(
     dropout_rate=cfg.dropout_rate,
     device=device,
 )
+
+# Load save model and turn eval mode.
 model.load_state_dict(torch.load("summarizer.pt"))
 model.train(False)
 model = model.to(device)
 
+# Initialize the out with a start os sequence token ([SOS]).
 output = torch.tensor(list(map(train_dt.encoder, ["[SOS]"]))).unsqueeze(0)
+
+input_text = "Amanda: I baked  cookies. Do you want some?\r\nJerry: Sure!\r\nAmanda: I'll bring you tomorrow :-)"
 
 out = summarize(
     model,
-    "Amanda: I baked  cookies. Do you want some?\r\nJerry: Sure!\r\nAmanda: I'll bring you tomorrow :-)",
+    input_text,
     output,
     50,
     train_dt.encoder,
@@ -43,6 +52,5 @@ out = summarize(
     device=device,
 )
 
-print(out)
-
+# Print output.
 print(out.replace("[SOS]", "").replace("[UNK]", "").replace("[EOS]", "").strip())
