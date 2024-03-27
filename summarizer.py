@@ -35,7 +35,7 @@ output = torch.tensor(list(map(train_dt.encoder, ["[SOS]"]))).unsqueeze(0)
 
 out = summarize(
     model,
-    "Sleek design. Powerful performance. Intuitive interface. Your everyday tasks just got a whole lot easier.",
+    "A will go to the animal shelter tomorrow to get a puppy for her son. They already visited the shelter last Monday and the son chose the puppy. ",
     output,
     50,
     train_dt.encoder,
@@ -43,4 +43,4 @@ out = summarize(
     device=device,
 )
 
-print(out)
+print(out.replace("[SOS]", "").replace("[UNK]", "").replace("[EOS]", "").strip())

@@ -44,6 +44,7 @@ def summarize(model, enc_input, output, max_dec_len, encoder, decoder, device="c
         predicted_id = next_word(model, enc_input, output, encoder, device=device)
         output = torch.concat([output[0], predicted_id]).unsqueeze(0)
 
-        # break
+        if predicted_id[0] == 2:
+            break
 
     return " ".join(list(map(decoder, output[0].cpu().numpy())))

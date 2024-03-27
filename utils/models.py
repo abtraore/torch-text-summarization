@@ -175,6 +175,8 @@ class DecoderLayer(nn.Module):
             is_causal=True,
         )
 
+        # print(self_mha_out_1[0])
+
         Q1 = self.layer_norm1(x + self_mha_out_1)
 
         cross_mha_out_2, _ = self.mha_2(
@@ -307,7 +309,7 @@ class Transformer(nn.Module):
         # print(target_vocab_size)
 
         self.classifier = nn.Linear(units, target_vocab_size)
-        self.logSoftmax = nn.LogSoftmax(dim=-1)
+        self.logSoftmax = nn.Softmax(dim=-1)
 
     def forward(
         self,
@@ -323,21 +325,17 @@ class Transformer(nn.Module):
             target, enc_out, enc_padding_mask, dec_padding_mask, dec_look_ahead_mask
         )
 
-        out = self.logSoftmax(self.classifier(dec_out))
+        out = self.classifier(dec_out)
 
         return out
 
 
 def create_padding_mask(token_ids):
-    mask = (token_ids == 0).float()
-
-    mask = 1 - mask
+    mask = token_ids == 0
     return mask
 
 
 def create_look_ahead_mask(seq_length):
-    mask = torch.tril(torch.ones((seq_length, seq_length))).float()
-
-    mask = (1 - mask) * -1e9
+    mask = torch.triu(torch.ones(seq_length, seq_length), diagonal=1).bool()
 
     return mask
