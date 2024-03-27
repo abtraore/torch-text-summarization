@@ -1,7 +1,7 @@
 class TransformerConfig:
     n_blocks = 2
     n_heads = 2
-    d_model = 128
+    d_model = 128  # Embedding size
     fully_connected_dim = 128
     max_position_encoding_input = 256
     max_position_target_input = 256

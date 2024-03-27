@@ -39,6 +39,7 @@ class SummarizationDataset(Dataset):
         return dialogue, summary
 
     def trunc_pad(self):
+        # Encode dialogue.
         for i in range(self.__len__()):
             self.data[0][i] = torch.tensor(
                 list(map(self.encoder, self.data[0][i].split()))[
@@ -46,11 +47,11 @@ class SummarizationDataset(Dataset):
                 ]
             )
 
-        self.dialogue = self.data[0]
+        self.dialogue = self.data[0]  # Create a attribute with dialogue.
+        self.dialogue = pad_sequence(self.dialogue)  # Pad to the max length sequence.
+        self.dialogue = torch.permute(self.dialogue, (1, 0))  # Turn (S, B) -> (B, S).
 
-        self.dialogue = pad_sequence(self.dialogue)
-        self.dialogue = torch.permute(self.dialogue, (1, 0))
-
+        # Encode summary.
         for i in range(self.__len__()):
             self.data[1][i] = torch.tensor(
                 list(map(self.encoder, self.data[1][i].split()))[
@@ -58,7 +59,6 @@ class SummarizationDataset(Dataset):
                 ]
             )
 
-        self.summary = self.data[1]
-
-        self.summary = pad_sequence(self.summary)
-        self.summary = torch.permute(self.summary, (1, 0))
+        self.summary = self.data[1]  # Create a attribute with dialogue.
+        self.summary = pad_sequence(self.summary)  # Pad to the max length sequence.
+        self.summary = torch.permute(self.summary, (1, 0))  # Turn (S, B) -> (B, S).

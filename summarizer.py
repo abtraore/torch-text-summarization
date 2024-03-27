@@ -1,11 +1,10 @@
 import torch
 from torch.utils.data import DataLoader
 
-from utils.datasets import SummarizationDataset
-from utils.config import TransformerConfig
 from utils.models import Transformer
 from utils.summarize import summarize
-
+from utils.config import TransformerConfig
+from utils.datasets import SummarizationDataset
 
 # Create configuration.
 cfg = TransformerConfig()
@@ -16,7 +15,6 @@ train_loader = DataLoader(dataset=train_dt, batch_size=cfg.batch_size, shuffle=T
 
 # Use cpu for inference.
 device = "cpu"
-
 
 # Instantiate model.
 model = Transformer(
@@ -42,6 +40,7 @@ output = torch.tensor(list(map(train_dt.encoder, ["[SOS]"]))).unsqueeze(0)
 
 input_text = "Amanda: I baked  cookies. Do you want some?\r\nJerry: Sure!\r\nAmanda: I'll bring you tomorrow :-)"
 
+# Start the summarization.
 out = summarize(
     model,
     input_text,
@@ -52,5 +51,5 @@ out = summarize(
     device=device,
 )
 
-# Print output.
+# Print summary.
 print(out.replace("[SOS]", "").replace("[UNK]", "").replace("[EOS]", "").strip())
