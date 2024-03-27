@@ -10,15 +10,20 @@ from utils.trainer import loops
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+# Create configuration.
 cfg = TransformerConfig()
 
 
+# Instantiate train loader.
 train_dt = SummarizationDataset("data/corpus")
 train_loader = DataLoader(dataset=train_dt, batch_size=cfg.batch_size, shuffle=True)
 
+
+# Instantiate val loader.
 val_dt = SummarizationDataset("data/corpus", train=False)
 val_loader = DataLoader(dataset=val_dt, batch_size=cfg.batch_size, shuffle=True)
 
+# Instantiate model.
 model = Transformer(
     units=cfg.d_model,
     input_vocab_size=train_dt.vocab_size,
@@ -35,10 +40,10 @@ model = Transformer(
 model = model.to(device)
 
 optimizer = Adam(params=model.parameters(), lr=2e-4, betas=(0.9, 0.98), eps=1e-9)
-
 scheduler = CustomSchedule(cfg.d_model)
 
 loops(model, cfg.epochs, train_loader, val_loader, optimizer, scheduler, device)
 
+# Save model weights.
 model = model.cpu()
 torch.save(model.state_dict(), "summarizer.pt")
