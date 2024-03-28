@@ -14,12 +14,21 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 cfg = TransformerConfig()
 
 # Instantiate train loader.
-train_dt = SummarizationDataset("data/corpus")
+train_dt = SummarizationDataset(
+    "data/corpus",
+    max_enc_seq_length=cfg.max_seq_length_input,
+    max_dec_seq_length=cfg.max_seq_length_target,
+)
 train_loader = DataLoader(dataset=train_dt, batch_size=cfg.batch_size, shuffle=True)
 
 
 # Instantiate val loader.
-val_dt = SummarizationDataset("data/corpus", train=False)
+val_dt = SummarizationDataset(
+    "data/corpus",
+    max_enc_seq_length=cfg.max_seq_length_input,
+    max_dec_seq_length=cfg.max_seq_length_target,
+    train=False,
+)
 val_loader = DataLoader(dataset=val_dt, batch_size=cfg.batch_size, shuffle=True)
 
 
@@ -28,8 +37,7 @@ model = Transformer(
     embedding_dim=cfg.d_model,
     input_vocab_size=train_dt.vocab_size,
     target_vocab_size=train_dt.vocab_size,
-    input_max_length=cfg.max_position_encoding,
-    target_max_length=cfg.max_position_encoding,
+    max_position_encoding=cfg.max_position_encoding,
     n_heads=cfg.n_heads,
     n_blocks=cfg.n_blocks,
     fully_connected_dim=cfg.fully_connected_dim,
