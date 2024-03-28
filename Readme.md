@@ -16,3 +16,14 @@ It's important to note that achieving optimal results with Transformers typicall
 | Mike: Do u have new John's number?</br>Ann: No, u should ask Mary.</br>Mike: Ok, thank u :*|mike is going to ask mike|Mike will ask Mary for John's new number.|Test|
 |Kim: What kind of gift would you like to get?</br>Kim: Mom's asking.</br>Harry: Haha. No need for a gift for me :D</br>Harry: But you can tell your mom I just bought a new sofa and I need pillows.</br>Harry: If she asks for the colour, tell her that grey is the best :D</br>Kim: Sure! Thanks for info :)|mike is going to ask mike|Kim is about to tell mom that Harry bought a new sofa, and he needs grey pillows.|Test |
 
+## Installation
+
+Before starting make sure you have python 3.9+ installed.
+
+1. `git clone https://github.com/abtraore/torch-text-summarization.git`
+2. `python -m venv env`
+3. `pip install -r requirement.txt`
+
+
+## Usage
+
