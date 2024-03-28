@@ -31,7 +31,7 @@ def next_word(model, enc_input, output, encoder, device="cpu"):
         )
 
         predictions = predictions[0, -1:, :]
-        predictions = torch.softmax(predictions, dim=-1)
+        # predictions = torch.softmax(predictions, dim=-1)
         predicted_id = torch.argmax(predictions, dim=-1)
 
     return predicted_id

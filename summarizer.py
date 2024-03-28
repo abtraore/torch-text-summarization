@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 from torch.utils.data import DataLoader
 
@@ -6,50 +8,59 @@ from utils.summarize import summarize
 from utils.config import TransformerConfig
 from utils.datasets import SummarizationDataset
 
-# Create configuration.
-cfg = TransformerConfig()
 
-# Instantiate train loader.
-train_dt = SummarizationDataset("data/corpus")
-train_loader = DataLoader(dataset=train_dt, batch_size=cfg.batch_size, shuffle=True)
+parser = argparse.ArgumentParser("summarizer.py")
 
-# Use cpu for inference.
-device = "cpu"
+parser.add_argument("--input", type=str)
 
-# Instantiate model.
-model = Transformer(
-    units=cfg.d_model,
-    input_vocab_size=train_dt.vocab_size,
-    target_vocab_size=train_dt.vocab_size,
-    input_max_length=cfg.max_position_encoding_input,
-    target_max_length=cfg.max_position_encoding_input,
-    n_heads=cfg.n_heads,
-    n_blocks=cfg.n_blocks,
-    fully_connected_dim=cfg.fully_connected_dim,
-    dropout_rate=cfg.dropout_rate,
-    device=device,
-)
+if __name__ == "__main__":
 
-# Load save model and turn eval mode.
-model.load_state_dict(torch.load("summarizer.pt"))
-model.train(False)
-model = model.to(device)
+    args = parser.parse_args()
 
-# Initialize the out with a start os sequence token ([SOS]).
-output = torch.tensor(list(map(train_dt.encoder, ["[SOS]"]))).unsqueeze(0)
+    # Create configuration.
+    cfg = TransformerConfig()
 
-input_text = "Amanda: I baked  cookies. Do you want some?\r\nJerry: Sure!\r\nAmanda: I'll bring you tomorrow :-)"
+    # Instantiate train loader.
+    train_dt = SummarizationDataset("data/corpus")
+    train_loader = DataLoader(dataset=train_dt, batch_size=cfg.batch_size, shuffle=True)
 
-# Start the summarization.
-out = summarize(
-    model,
-    input_text,
-    output,
-    50,
-    train_dt.encoder,
-    train_dt.decoder,
-    device=device,
-)
+    # Use cpu for inference.
+    device = "cpu"
 
-# Print summary.
-print(out.replace("[SOS]", "").replace("[UNK]", "").replace("[EOS]", "").strip())
+    # Instantiate model.
+    model = Transformer(
+        embedding_dim=cfg.d_model,
+        input_vocab_size=train_dt.vocab_size,
+        target_vocab_size=train_dt.vocab_size,
+        input_max_length=cfg.max_position_encoding,
+        target_max_length=cfg.max_position_encoding,
+        n_heads=cfg.n_heads,
+        n_blocks=cfg.n_blocks,
+        fully_connected_dim=cfg.fully_connected_dim,
+        dropout_rate=cfg.dropout_rate,
+        device=device,
+    )
+
+    # Load save model and turn eval mode.
+    model.load_state_dict(torch.load(cfg.weights_path))
+    model.train(False)
+    model = model.to(device)
+
+    # Initialize the out with a start os sequence token ([SOS]).
+    output = torch.tensor(list(map(train_dt.encoder, ["[SOS]"]))).unsqueeze(0)
+
+    input_text = args.input
+
+    # Start the summarization.
+    out = summarize(
+        model,
+        input_text,
+        output,
+        50,
+        train_dt.encoder,
+        train_dt.decoder,
+        device=device,
+    )
+
+    # Print summary.
+    print(out.replace("[SOS]", "").replace("[UNK]", "").replace("[EOS]", "").strip())

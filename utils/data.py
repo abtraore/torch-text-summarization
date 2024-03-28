@@ -1,6 +1,5 @@
-import pandas as pd
 import re
-import numpy as np
+import pandas as pd
 
 
 def load_dataset(dataset_dir: str):
@@ -16,8 +15,10 @@ def load_dataset(dataset_dir: str):
 
 
 def preproccess_util(input_data: str):
+    filters = '!"#$%&()*+,-./:;<=>?@\\^_`{|}~\t\n'
+    pattern = "[" + filters + "]"
     lowercase = input_data.lower()
-    removed_newlines = re.sub("\n|\r|\t", " ", lowercase)
+    removed_newlines = re.sub(pattern, "", lowercase)
     removed_double_spaces = " ".join(removed_newlines.split(" "))
     clean = "[SOS] " + removed_double_spaces + " [EOS]"
     return clean
@@ -41,9 +42,6 @@ def preproccess(input_data: pd.DataFrame):
 
 def make_map(data):
 
-    filters = '!"#$%&()*+,-./:;<=>?@\\^_`{|}~\t\n'
-    pattern = "[" + filters + "]"
-
     stoi = {}
     stoi[""] = 0
     stoi["[SOS]"] = 1
@@ -53,7 +51,6 @@ def make_map(data):
 
     idx = 0
     for _, line in enumerate(data):
-        line = re.sub(pattern, "", line)
         clean_words = [words.strip() for words in line.split()]
 
         for word in clean_words:

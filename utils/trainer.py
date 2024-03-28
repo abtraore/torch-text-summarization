@@ -4,9 +4,12 @@ from tqdm import tqdm
 
 from .loss import mask_loss
 from .models import create_look_ahead_mask, create_padding_mask
+from .summarize import summarize
 
 
-def loops(model, epochs, train_loader, val_loader, optimizer, scheduler, device):
+def loops(
+    model, epochs, train_loader, val_loader, optimizer, scheduler, train_dt, device
+):
 
     model = model.to(device)
 
@@ -87,5 +90,19 @@ def loops(model, epochs, train_loader, val_loader, optimizer, scheduler, device)
 
         val_total_loss = val_total_loss / len(val_loader)
 
+        output = torch.tensor(list(map(train_dt.encoder, ["[SOS]"]))).unsqueeze(0)
+        output = output.to(device)
+        out = summarize(
+            model,
+            "Amanda: I baked  cookies. Do you want some?\r\nJerry: Sure!\r\nAmanda: I'll bring you tomorrow :-)",
+            output,
+            50,
+            train_dt.encoder,
+            train_dt.decoder,
+            device=device,
+        )
+
+        out = out.replace("[SOS]", "").replace("[UNK]", "").replace("[EOS]", "").strip()
         print(f" Epoch: {epoch+1} | Train Loss: {train_total_loss:.4}")
-        print(f" Epoch: {epoch+1} | Val Loss: {val_total_loss:.4}\n")
+        print(f"Epoch: {epoch+1} | Val Loss: {val_total_loss:.4}")
+        print(f"Epoch: {epoch+1} | Prediction: {out}\n")

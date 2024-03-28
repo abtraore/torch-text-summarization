@@ -21,7 +21,6 @@ class PositionalEncoding(nn.Module):
 
         pe[:, 0::2] = torch.sin(pe[:, 0::2])
         pe[:, 1::2] = torch.cos(pe[:, 1::2])
-
         pe = pe.unsqueeze(0)
 
         self.register_buffer("pe", pe)
@@ -35,27 +34,30 @@ class PositionalEncoding(nn.Module):
 class EncoderLayer(nn.Module):
     def __init__(
         self,
-        units,
+        embedding_dim,
         n_heads=2,
         fully_connected_dim=256,
         dropout_rate=0.1,
         layernorm_eps=1e-6,
     ):
         super().__init__()
-        self.units = units
+        self.embedding_dim = embedding_dim
 
         self.mha = nn.MultiheadAttention(
-            embed_dim=units, num_heads=n_heads, dropout=dropout_rate, batch_first=True
+            embed_dim=embedding_dim,
+            num_heads=n_heads,
+            dropout=dropout_rate,
+            batch_first=True,
         )
 
         self.ffn = nn.Sequential(
-            nn.Linear(units, fully_connected_dim),
+            nn.Linear(embedding_dim, fully_connected_dim),
             nn.ReLU(),
-            nn.Linear(fully_connected_dim, units),
+            nn.Linear(fully_connected_dim, embedding_dim),
         )
 
-        self.layer_norm1 = nn.LayerNorm(units, eps=layernorm_eps)
-        self.layer_norm2 = nn.LayerNorm(units, eps=layernorm_eps)
+        self.layer_norm1 = nn.LayerNorm(embedding_dim, eps=layernorm_eps)
+        self.layer_norm2 = nn.LayerNorm(embedding_dim, eps=layernorm_eps)
 
         self.dropout_ffn = nn.Dropout(dropout_rate)
 
@@ -77,7 +79,7 @@ class EncoderLayer(nn.Module):
 class Encoder(nn.Module):
     def __init__(
         self,
-        units,
+        embedding_dim,
         vocab_size,
         n_heads=2,
         n_bloks=2,
@@ -87,18 +89,20 @@ class Encoder(nn.Module):
         device="cpu",
     ):
         super().__init__()
-        self.units = units
-        self.embedding = nn.Embedding(vocab_size, units, padding_idx=0)
+        self.embedding_dim = embedding_dim
+        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=0)
         self.n_heads = n_heads
         self.n_blocks = n_bloks
-        self.pos_encoding = PositionalEncoding(units, max_position_encoding=max_length)
+        self.pos_encoding = PositionalEncoding(
+            embedding_dim, max_position_encoding=max_length
+        )
 
         self.dropout = nn.Dropout(dropout_rate)
 
         self.encoder_layers = nn.ModuleList(
             [
                 EncoderLayer(
-                    units=units,
+                    embedding_dim=embedding_dim,
                     n_heads=n_heads,
                     fully_connected_dim=fully_connected_dim,
                     dropout_rate=dropout_rate,
@@ -113,7 +117,7 @@ class Encoder(nn.Module):
 
         x = self.embedding(x)
 
-        x *= torch.sqrt(torch.tensor(self.units))
+        x *= torch.sqrt(torch.tensor(self.embedding_dim))
 
         x = self.pos_encoding(x)
         x = x[:, :seq_length, :]
@@ -129,32 +133,38 @@ class Encoder(nn.Module):
 class DecoderLayer(nn.Module):
     def __init__(
         self,
-        units,
+        embedding_dim,
         n_heads=2,
         fully_connected_dim=256,
         dropout_rate=0.1,
         layernorm_eps=1e-6,
     ):
         super().__init__()
-        self.units = units
+        self.embedding_dim = embedding_dim
 
         self.mha_1 = nn.MultiheadAttention(
-            embed_dim=units, num_heads=n_heads, dropout=dropout_rate, batch_first=True
+            embed_dim=embedding_dim,
+            num_heads=n_heads,
+            dropout=dropout_rate,
+            batch_first=True,
         )
 
         self.mha_2 = nn.MultiheadAttention(
-            embed_dim=units, num_heads=n_heads, dropout=dropout_rate, batch_first=True
+            embed_dim=embedding_dim,
+            num_heads=n_heads,
+            dropout=dropout_rate,
+            batch_first=True,
         )
 
         self.ffn = nn.Sequential(
-            nn.Linear(units, fully_connected_dim),
+            nn.Linear(embedding_dim, fully_connected_dim),
             nn.ReLU(),
-            nn.Linear(fully_connected_dim, units),
+            nn.Linear(fully_connected_dim, embedding_dim),
         )
 
-        self.layer_norm1 = nn.LayerNorm(units, eps=layernorm_eps)
-        self.layer_norm2 = nn.LayerNorm(units, eps=layernorm_eps)
-        self.layer_norm3 = nn.LayerNorm(units, eps=layernorm_eps)
+        self.layer_norm1 = nn.LayerNorm(embedding_dim, eps=layernorm_eps)
+        self.layer_norm2 = nn.LayerNorm(embedding_dim, eps=layernorm_eps)
+        self.layer_norm3 = nn.LayerNorm(embedding_dim, eps=layernorm_eps)
 
         self.dropout_ffn = nn.Dropout(dropout_rate)
 
@@ -192,7 +202,7 @@ class DecoderLayer(nn.Module):
 class Decoder(nn.Module):
     def __init__(
         self,
-        units,
+        embedding_dim,
         vocab_size,
         n_heads=2,
         n_bloks=2,
@@ -202,19 +212,21 @@ class Decoder(nn.Module):
         device="cpu",
     ):
         super().__init__()
-        self.units = units
+        self.embedding_dim = embedding_dim
         self.vocab_size = vocab_size
-        self.embedding = nn.Embedding(vocab_size, units, padding_idx=0)
+        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=0)
         self.n_heads = n_heads
         self.n_blocks = n_bloks
-        self.pos_encoding = PositionalEncoding(units, max_position_encoding=max_length)
+        self.pos_encoding = PositionalEncoding(
+            embedding_dim, max_position_encoding=max_length
+        )
 
         self.dropout = nn.Dropout(dropout_rate)
 
         self.decoder_layers = nn.ModuleList(
             [
                 DecoderLayer(
-                    units=units,
+                    embedding_dim=embedding_dim,
                     n_heads=n_heads,
                     fully_connected_dim=fully_connected_dim,
                     dropout_rate=dropout_rate,
@@ -236,7 +248,7 @@ class Decoder(nn.Module):
 
         x = self.embedding(x)
 
-        x *= torch.sqrt(torch.tensor(self.units))
+        x *= torch.sqrt(torch.tensor(self.embedding_dim))
 
         x = self.pos_encoding(x)
         x = x[:, :seq_length, :]
@@ -254,7 +266,7 @@ class Decoder(nn.Module):
 class Transformer(nn.Module):
     def __init__(
         self,
-        units,
+        embedding_dim,
         input_vocab_size,
         target_vocab_size,
         input_max_length=150,
@@ -268,7 +280,7 @@ class Transformer(nn.Module):
 
         super().__init__()
 
-        self.units = units
+        self.embedding_dim = embedding_dim
         self.n_heads = n_heads
         self.n_blocks = n_blocks
         self.dropout_rate = dropout_rate
@@ -280,7 +292,7 @@ class Transformer(nn.Module):
         self.target_vocab_size = target_vocab_size
 
         self.encoder = Encoder(
-            units=self.units,
+            embedding_dim=self.embedding_dim,
             vocab_size=self.input_vocab_size,
             n_heads=n_heads,
             n_bloks=self.n_blocks,
@@ -290,7 +302,7 @@ class Transformer(nn.Module):
         )
 
         self.decoder = Decoder(
-            units=self.units,
+            embedding_dim=self.embedding_dim,
             vocab_size=self.target_vocab_size,
             n_heads=n_heads,
             n_bloks=self.n_blocks,
@@ -299,7 +311,7 @@ class Transformer(nn.Module):
             device=device,
         )
 
-        self.classifier = nn.Linear(units, target_vocab_size)
+        self.classifier = nn.Linear(embedding_dim, target_vocab_size)
 
     def forward(
         self,

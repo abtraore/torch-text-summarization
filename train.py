@@ -22,13 +22,14 @@ train_loader = DataLoader(dataset=train_dt, batch_size=cfg.batch_size, shuffle=T
 val_dt = SummarizationDataset("data/corpus", train=False)
 val_loader = DataLoader(dataset=val_dt, batch_size=cfg.batch_size, shuffle=True)
 
+
 # Instantiate model.
 model = Transformer(
-    units=cfg.d_model,
+    embedding_dim=cfg.d_model,
     input_vocab_size=train_dt.vocab_size,
     target_vocab_size=train_dt.vocab_size,
-    input_max_length=cfg.max_position_encoding_input,
-    target_max_length=cfg.max_position_encoding_input,
+    input_max_length=cfg.max_position_encoding,
+    target_max_length=cfg.max_position_encoding,
     n_heads=cfg.n_heads,
     n_blocks=cfg.n_blocks,
     fully_connected_dim=cfg.fully_connected_dim,
@@ -41,8 +42,10 @@ model = model.to(device)
 optimizer = Adam(params=model.parameters(), lr=2e-4, betas=(0.9, 0.98), eps=1e-9)
 scheduler = CustomSchedule(cfg.d_model)
 
-loops(model, cfg.epochs, train_loader, val_loader, optimizer, scheduler, device)
+loops(
+    model, cfg.epochs, train_loader, val_loader, optimizer, scheduler, train_dt, device
+)
 
 # Save model weights.
 model = model.cpu()
-torch.save(model.state_dict(), "summarizer.pt")
+torch.save(model.state_dict(), cfg.weights_path)
