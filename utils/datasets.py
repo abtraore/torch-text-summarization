@@ -41,6 +41,7 @@ class SummarizationDataset(Dataset):
         return dialogue, summary_in, summary_out
 
     def trunc_pad(self):
+        # TODO: Find a better way to rewrite that.
 
         self.tensor_data_dialog = torch.zeros(
             (self.data[0].shape[0], self.max_enc_seq_length), dtype=torch.long

@@ -62,5 +62,5 @@ if __name__ == "__main__":
         device=device,
     )
 
-    # Print summary.
+    # Print summary. #TODO: Find a better way to rewrite that.
     print(out.replace("[SOS]", "").replace("[UNK]", "").replace("[EOS]", "").strip())
