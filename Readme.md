@@ -98,9 +98,6 @@ The model's configuration settings are defined within `utils/config.py`. This fi
 
 This configuration file allows for easy adjustments to the model's parameters, enabling fine-tuning and optimization according to specific requirements or dataset characteristics.
 
-When documenting the training process, it’s beneficial to keep instructions straightforward and clear, especially for users who may not be familiar with running Python scripts. Here’s how you can present the training instructions to align with common GitHub README practices:
-
-
 ### Training
 
 To initiate the training process for the model, you only need to execute the `train.py` script from your command line or terminal. This simplicity is possible because all necessary model parameters have been pre-configured in the `utils/config.py` file, ensuring a smooth start without the need for initial adjustments.
