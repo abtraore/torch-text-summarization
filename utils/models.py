@@ -85,7 +85,7 @@ class Encoder(nn.Module):
         n_bloks=2,
         fully_connected_dim=256,
         dropout_rate=0.1,
-        max_length=150,
+        max_position_encoding=150,
         device="cpu",
     ):
         super().__init__()
@@ -94,7 +94,7 @@ class Encoder(nn.Module):
         self.n_heads = n_heads
         self.n_blocks = n_bloks
         self.pos_encoding = PositionalEncoding(
-            embedding_dim, max_position_encoding=max_length
+            embedding_dim, max_position_encoding=max_position_encoding
         )
 
         self.dropout = nn.Dropout(dropout_rate)
@@ -208,7 +208,7 @@ class Decoder(nn.Module):
         n_bloks=2,
         fully_connected_dim=256,
         dropout_rate=0.1,
-        max_length=150,
+        max_position_encoding=150,
         device="cpu",
     ):
         super().__init__()
@@ -218,7 +218,7 @@ class Decoder(nn.Module):
         self.n_heads = n_heads
         self.n_blocks = n_bloks
         self.pos_encoding = PositionalEncoding(
-            embedding_dim, max_position_encoding=max_length
+            embedding_dim, max_position_encoding=max_position_encoding
         )
 
         self.dropout = nn.Dropout(dropout_rate)
@@ -269,8 +269,7 @@ class Transformer(nn.Module):
         embedding_dim,
         input_vocab_size,
         target_vocab_size,
-        input_max_length=150,
-        target_max_length=50,
+        max_position_encoding=150,
         n_heads=2,
         n_blocks=2,
         fully_connected_dim=256,
@@ -286,8 +285,7 @@ class Transformer(nn.Module):
         self.dropout_rate = dropout_rate
         self.fully_connected_dim = fully_connected_dim
 
-        self.input_max_length = input_max_length
-        self.target_max_length = target_max_length
+        self.max_position_encoding = max_position_encoding
         self.input_vocab_size = input_vocab_size
         self.target_vocab_size = target_vocab_size
 
@@ -297,7 +295,7 @@ class Transformer(nn.Module):
             n_heads=n_heads,
             n_bloks=self.n_blocks,
             fully_connected_dim=self.fully_connected_dim,
-            max_length=self.input_max_length,
+            max_position_encoding=self.max_position_encoding,
             device=device,
         )
 
@@ -307,7 +305,7 @@ class Transformer(nn.Module):
             n_heads=n_heads,
             n_bloks=self.n_blocks,
             fully_connected_dim=self.fully_connected_dim,
-            max_length=self.target_max_length,
+            max_position_encoding=self.max_position_encoding,
             device=device,
         )
 
