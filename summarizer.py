@@ -56,7 +56,7 @@ if __name__ == "__main__":
         model,
         input_text,
         output,
-        50,
+        cfg.max_seq_length_target,
         train_dt.encoder,
         train_dt.decoder,
         device=device,
