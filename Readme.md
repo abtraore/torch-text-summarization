@@ -1,6 +1,6 @@
 # Torch Text Summarization 
 
-This project is designed to offer an introduction to the workings of transformers, providing an intuitive understanding of their mechanisms. It centers around the task of dialogue summarization. Utilizing a **sequence-to-sequence** (seq-to-seq) model, which incorporates both an encoder and a decoder, facilitates this process. To accelerate convergence during the training phase, the teacher forcing strategy is employed. The dataset employed for training can be found at 'data/corpus'.
+This project is designed to offer an introduction to the workings of transformers, providing an intuitive understanding of their mechanisms. It centers around the task of dialogue summarization. Utilizing a **sequence-to-sequence** (seq-to-seq) model, which incorporates both an encoder and a decoder, facilitates this process. To accelerate convergence during the training phase, the teacher forcing strategy is employed. The dataset employed for training can be found at `data/corpus`.
 
 
 ## Results
