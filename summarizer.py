@@ -46,7 +46,7 @@ if __name__ == "__main__":
     model.train(False)
     model = model.to(device)
 
-    # Initialize the out with a start os sequence token ([SOS]).
+    # Initialize the output with a start of sequence token ([SOS]).
     output = torch.tensor(list(map(train_dt.encoder, ["[SOS]"]))).unsqueeze(0)
 
     input_text = args.input
