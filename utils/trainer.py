@@ -24,13 +24,11 @@ def loops(
             for param_group in optimizer.param_groups:
                 param_group["lr"] = lr.item()  # Update the learning rate
 
-            context, target = data
+            context, target_in, target_out = data
 
             context = context.to(device)
-            target = target.to(device)
-
-            target_in = target[:, :-1]
-            target_out = target[:, 1:]
+            target_in = target_in.to(device)
+            target_out = target_out.to(device)
 
             enc_padding_mask = create_padding_mask(context)
             dec_padding_mask = create_padding_mask(target_in).to(device)
@@ -60,13 +58,11 @@ def loops(
             val_total_loss = 0.0
             for _, data in enumerate(tqdm(val_loader, desc="Validating", leave=False)):
 
-                context, target = data
+                context, target_in, target_out = data
 
                 context = context.to(device)
-                target = target.to(device)
-
-                target_in = target[:, :-1]
-                target_out = target[:, 1:]
+                target_in = target_in.to(device)
+                target_out = target_out.to(device)
 
                 enc_padding_mask = create_padding_mask(context)
                 dec_padding_mask = create_padding_mask(target_in).to(device)
@@ -92,9 +88,13 @@ def loops(
 
         output = torch.tensor(list(map(train_dt.encoder, ["[SOS]"]))).unsqueeze(0)
         output = output.to(device)
+
+        true_output_str = "Amanda baked cookies and will bring Jerry some tomorrow."
+        input_str = "Amanda: I baked  cookies. Do you want some?\r\nJerry: Sure!\r\nAmanda: I'll bring you tomorrow :-)"
+
         out = summarize(
             model,
-            "Amanda: I baked  cookies. Do you want some?\r\nJerry: Sure!\r\nAmanda: I'll bring you tomorrow :-)",
+            input_str,
             output,
             50,
             train_dt.encoder,
@@ -105,4 +105,4 @@ def loops(
         out = out.replace("[SOS]", "").replace("[UNK]", "").replace("[EOS]", "").strip()
         print(f" Epoch: {epoch+1} | Train Loss: {train_total_loss:.4}")
         print(f"Epoch: {epoch+1} | Val Loss: {val_total_loss:.4}")
-        print(f"Epoch: {epoch+1} | Prediction: {out}\n")
+        print(f"Epoch: {epoch+1} | Prediction: {out} | True: {true_output_str}\n")
