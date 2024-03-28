@@ -1,8 +1,9 @@
 import torch
 from torch.utils.data import Dataset
-from torch.nn.utils.rnn import pad_sequence
 
 from .data import load_dataset, make_maps, get_encoder_decoder, preproccess
+
+import numpy as np
 
 
 class SummarizationDataset(Dataset):
@@ -33,32 +34,80 @@ class SummarizationDataset(Dataset):
 
     def __getitem__(self, index):
 
-        dialogue = self.dialogue[index]
-        summary = self.summary[index]
+        dialogue = self.tensor_data_dialog[index]
+        summary_in = self.tensor_data_summary_in[index]
+        summary_out = self.tensor_data_summary_out[index]
 
-        return dialogue, summary
+        return dialogue, summary_in, summary_out
 
     def trunc_pad(self):
+
+        self.tensor_data_dialog = torch.zeros(
+            (self.data[0].shape[0], self.max_enc_seq_length), dtype=torch.long
+        )
+
         # Encode dialogue.
         for i in range(self.__len__()):
-            self.data[0][i] = torch.tensor(
-                list(map(self.encoder, self.data[0][i].split()))[
-                    : self.max_enc_seq_length
-                ]
+
+            encoded_data = torch.tensor(
+                np.array(
+                    list(map(self.encoder, self.data[0][i].split()))[
+                        : self.max_enc_seq_length
+                    ]
+                )
             )
 
-        self.dialogue = self.data[0]  # Create a attribute with dialogue.
-        self.dialogue = pad_sequence(self.dialogue)  # Pad to the max length sequence.
-        self.dialogue = torch.permute(self.dialogue, (1, 0))  # Turn (S, B) -> (B, S).
+            padding_amount = self.max_enc_seq_length - encoded_data.shape[0]
+
+            encoded_data = torch.constant_pad_nd(
+                encoded_data,
+                (0, padding_amount),
+            )
+
+            self.tensor_data_dialog[i] = encoded_data
+
+        self.tensor_data_summary_in = torch.zeros(
+            (self.data[0].shape[0], self.max_dec_seq_length), dtype=torch.long
+        )
+
+        self.tensor_data_summary_out = torch.zeros(
+            (self.data[0].shape[0], self.max_dec_seq_length), dtype=torch.long
+        )
+
+        self.tensor_data_summary = torch.zeros(
+            (self.data[0].shape[0], self.max_dec_seq_length), dtype=torch.long
+        )
 
         # Encode summary.
         for i in range(self.__len__()):
-            self.data[1][i] = torch.tensor(
-                list(map(self.encoder, self.data[1][i].split()))[
-                    : self.max_dec_seq_length
-                ]
+            encoded_data = torch.tensor(
+                np.array(
+                    list(map(self.encoder, self.data[1][i].split()))[
+                        : self.max_dec_seq_length
+                    ]
+                )
             )
 
-        self.summary = self.data[1]  # Create a attribute with dialogue.
-        self.summary = pad_sequence(self.summary)  # Pad to the max length sequence.
-        self.summary = torch.permute(self.summary, (1, 0))  # Turn (S, B) -> (B, S).
+            encoded_data_in = encoded_data[:-1]
+            encoded_data_out = encoded_data[1:]
+
+            padding_amount = self.max_dec_seq_length - encoded_data_in.shape[0]
+
+            encoded_data_in = torch.constant_pad_nd(
+                encoded_data_in,
+                (0, padding_amount),
+            )
+
+            encoded_data_out = torch.constant_pad_nd(
+                encoded_data_out,
+                (0, padding_amount),
+            )
+
+            encoded_data = torch.constant_pad_nd(
+                encoded_data,
+                (0, padding_amount - 1),
+            )
+
+            self.tensor_data_summary_in[i] = encoded_data_in
+            self.tensor_data_summary_out[i] = encoded_data_out
+            self.tensor_data_summary[i] = encoded_data
